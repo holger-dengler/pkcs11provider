@@ -1,2 +1,3 @@
-# pkcs11provider
-WIP: OpenSSL PKCS #11 provider
+# PKCS11 provider
+
+work in progress
