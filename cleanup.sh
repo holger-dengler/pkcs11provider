@@ -7,13 +7,17 @@ rm -rf \
     autoscan.log \
     compile \
     config.guess \
+    config.h \
     config.h.in \
     config.h.in~ \
+    config.log \
+    config.status \
     config.sub \
     configure \
     configure.scan \
     depcomp \
     install-sh \
+    libtool \
     ltmain.sh \
     m4/libtool.m4 \
     m4/ltoptions.m4 \
@@ -24,6 +28,8 @@ rm -rf \
     src/.deps \
     src/.libs \
     src/Makefile.in \
+    stamp-h1 \
     test-driver \
     test/.deps \
+    test/Makefile.in \
     missing

@@ -1,6 +1,6 @@
-# pkcs11 provider
+# pkcs11provider
 
-*** work in progress ***
+work in progress
 
 ### build
 

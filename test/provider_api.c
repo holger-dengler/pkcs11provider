@@ -26,9 +26,8 @@
 int main(int argc, char *argv[])
 {
     const OSSL_PARAM *gettable_params;
-    OSSL_PARAM get_param;
+    OSSL_PARAM get_param[3];
     OSSL_PROVIDER *prov;
-    unsigned char buff[256];
     const char *str;
     int rc, i;
 
@@ -71,18 +70,28 @@ int main(int argc, char *argv[])
 
     /* get params */
 
-    get_param.key = OSSL_PROV_PARAM_NAME;
-    get_param.data_type = OSSL_PARAM_UTF8_PTR;
-    get_param.data = buff;
-    get_param.data_size = sizeof(buff);
-    get_param.return_size = 0;
+    get_param[0].key = OSSL_PROV_PARAM_NAME;
+    get_param[0].data_type = OSSL_PARAM_UTF8_PTR;
+    get_param[0].data = NULL;
+    get_param[0].data_size = 0;
+    get_param[0].return_size = 0;
 
-    rc = OSSL_PROVIDER_get_params(prov, &get_param);
+    get_param[1].key = OSSL_PROV_PARAM_VERSION;
+    get_param[1].data_type = OSSL_PARAM_UTF8_PTR;
+    get_param[1].data = NULL;
+    get_param[1].data_size = 0;
+    get_param[1].return_size = 0;
+
+    get_param[2].key = NULL; /* last array element */
+
+    rc = OSSL_PROVIDER_get_params(prov, get_param);
     if (rc != 1)
         TEST_EXIT_FAIL_MSG("OSSL_PROVIDER_get_params returned %d", rc);
 
     fprintf(TEST_STREAM, "%s : %s\n",
-            OSSL_PROV_PARAM_NAME, (char *)get_param.data);
+            OSSL_PROV_PARAM_NAME, (char *)get_param[0].data);
+    fprintf(TEST_STREAM, "%s : %s\n",
+            OSSL_PROV_PARAM_VERSION, (char *)get_param[1].data);
     
     /* unload */
 

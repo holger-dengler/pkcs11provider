@@ -1,6 +1,8 @@
 *.o
 *.lo
 *.la
+test/*.trs
+test/*.log
 aclocal.m4
 ar-lib
 autom4te.cache
