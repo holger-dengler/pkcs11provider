@@ -1,3 +1,18 @@
-# PKCS11 provider
+# pkcs11 provider
 
-work in progress
+*** work in progress ***
+
+### build
+
+```
+./bootstrap
+./configure
+make
+```
+
+### test
+```
+make check
+```
+
+
