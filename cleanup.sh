@@ -8,13 +8,22 @@ rm -rf \
     compile \
     config.guess \
     config.h.in \
+    config.h.in~ \
     config.sub \
     configure \
     configure.scan \
     depcomp \
     install-sh \
     ltmain.sh \
+    m4/libtool.m4 \
+    m4/ltoptions.m4 \
+    m4/ltsugar.m4 \
+    m4/ltversion.m4 \
+    m4/lt~obsolete.m4 \
     Makefile.in \
     src/.deps \
+    src/.libs \
     src/Makefile.in \
+    test-driver \
+    test/.deps \
     missing
