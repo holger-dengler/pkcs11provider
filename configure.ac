@@ -23,6 +23,9 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_FILES([Makefile src/Makefile])
 AC_CONFIG_HEADERS([config.h])
 
+### Checks for libs
+AX_CHECK_OPENSSL([],[AC_MSG_ERROR([Cannot find OpenSSL])])
+
 AM_PROG_AR
 AC_PROG_CC
 AC_PROG_INSTALL

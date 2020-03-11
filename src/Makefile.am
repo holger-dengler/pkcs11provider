@@ -6,6 +6,9 @@ pkcs11_la_LDFLAGS = \
     -Wl,--version-script=${srcdir}/provider.map \
     -version-number @VERSION_MAJOR@:@VERSION_MINOR@:@VERSION_PATCH@
 
+pkcs11_la_CFLAGS = \
+	$(OPENSSL_INCLUDES)
+
 pkcs11_la_SOURCES = \
     p11_init.c
 
