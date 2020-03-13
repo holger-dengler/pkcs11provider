@@ -39,4 +39,5 @@ test/.deps
 test/Makefile
 test/Makefile.in
 test/provider_api
+test/thread_multi
 missing

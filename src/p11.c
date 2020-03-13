@@ -15,6 +15,7 @@
  */
 
 #include <dlfcn.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -33,13 +34,25 @@ PROVIDER_FN(provider_query_operation);
 PROVIDER_FN(provider_get_reason_strings);
 #undef PROVIDER_FN
 
+/*
+ * Provider global mutex and refcount.
+ * Used to serialize C_Initialize and C_Finalize calls: The pkcs11 module is
+ * initialized when the first provider context is allocated and finalized when
+ * the last provider context is freed. For details on pkcs11 multi-threading,
+ * see [pkcs11 ug].
+ */
+struct global {
+    pthread_mutex_t mutex;
+    unsigned int refcount;
+};
+static struct global glob = {PTHREAD_MUTEX_INITIALIZER, 0};
+
 int OSSL_provider_init(const OSSL_PROVIDER *provider,
                        const OSSL_DISPATCH *in,
                        const OSSL_DISPATCH **out,
                        void **provctx)
 {
     CK_C_GetFunctionList get_functionlist;
-    CK_C_INITIALIZE_ARGS initargs;
     struct p11ctx *ctx = NULL;
     char *str;
     CK_RV rv;
@@ -136,7 +149,7 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     if (str[0] != '\0')
         goto err;
 
-    /* Initialize pkcs11 module. */
+    /* Get pkcs11 module. entry point. */
     *(void **)(&get_functionlist) = dlsym(ctx->so_handle,
                                           "C_GetFunctionList");
     if (get_functionlist == NULL)
@@ -144,10 +157,21 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     rv = get_functionlist(&ctx->fn);
     if (rv != CKR_OK)
         goto err;
-    memset(&initargs, 0, sizeof(initargs));
-    initargs.flags = CKF_OS_LOCKING_OK;
-    rv = ctx->fn->C_Initialize(&initargs);
-    if (rv != CKR_OK && rv != CKR_CRYPTOKI_ALREADY_INITIALIZED)
+
+    /* Initialize pkcs11 module. */
+    pthread_mutex_lock(&glob.mutex);
+    if (glob.refcount == 0) {
+        CK_C_INITIALIZE_ARGS initargs = {0};
+        initargs.flags = CKF_OS_LOCKING_OK;
+
+        rv = ctx->fn->C_Initialize(&initargs);
+        if (rv == CKR_OK)
+            glob.refcount = 1;
+    } else {
+        glob.refcount++;
+    }
+    pthread_mutex_unlock(&glob.mutex);
+    if (rv != CKR_OK)
         goto err;
 
     /* Init successful. */
@@ -188,8 +212,15 @@ static void provider_teardown(void *provctx)
     if (ctx == NULL)
         return;
 
-    if (ctx->fn != NULL)
-        ctx->fn->C_Finalize(NULL);
+    /* Finalize pkcs11 module. */
+    pthread_mutex_lock(&glob.mutex);
+    if (glob.refcount > 0) {
+        glob.refcount--;
+
+        if (glob.refcount == 0)
+            ctx->fn->C_Finalize(NULL);
+    }
+    pthread_mutex_unlock(&glob.mutex);
 
     if (ctx->so_handle != NULL) {
         dlclose(ctx->so_handle);

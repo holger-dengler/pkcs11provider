@@ -7,7 +7,7 @@ pkcs11_la_LDFLAGS = \
     -version-number @VERSION_MAJOR@:@VERSION_MINOR@:@VERSION_PATCH@
 
 pkcs11_la_CFLAGS = \
-    $(OPENSSL_INCLUDES)
+    $(OPENSSL_INCLUDES) -pthread
 
 pkcs11_la_SOURCES = \
     pkcs11.h \
