@@ -38,7 +38,8 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
                        const OSSL_DISPATCH **out,
                        void **provctx)
 {
-    CK_C_GetFunctionList get_fn;
+    CK_C_GetFunctionList get_functionlist;
+    CK_C_INITIALIZE_ARGS initargs;
     struct p11ctx *ctx = NULL;
     char *str;
     CK_RV rv;
@@ -100,9 +101,11 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     {
         OSSL_PARAM core_params[] = {
             /* default params */
-            {"openssl-version", OSSL_PARAM_UTF8_PTR, &ctx->openssl_version, 0, 0},
+            {"openssl-version",
+             OSSL_PARAM_UTF8_PTR, &ctx->openssl_version, 0, 0},
             {"provider-name", OSSL_PARAM_UTF8_PTR, &ctx->provider_name, 0, 0},
-            {"module-filename", OSSL_PARAM_UTF8_PTR, &ctx->module_filename, 0, 0},
+            {"module-filename",
+             OSSL_PARAM_UTF8_PTR, &ctx->module_filename, 0, 0},
             {"module", OSSL_PARAM_UTF8_PTR, &ctx->module, 0, 0},
             /* custom params */
             {"pkcs11module", OSSL_PARAM_UTF8_PTR, &ctx->pkcs11module, 0, 0},
@@ -126,20 +129,25 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     if (str != NULL && str[0] != '\0')
         ctx->pkcs11slotid = str;
 
-    /* Load pkcs11 module entry point. */
     ctx->so_handle = dlopen(ctx->pkcs11module, RTLD_NOW);
     if (ctx->so_handle == NULL)
         goto err;
-    *(void **)(&get_fn) = dlsym(ctx->so_handle, "C_GetFunctionList");
-    if (get_fn == NULL)
-        goto err;
-    rv = get_fn(&ctx->fn);
-    if (rv != CKR_OK)
-        goto err;
-
-    /* Parse slot id. */
     ctx->slotid = strtoul(ctx->pkcs11slotid, &str, 0);
     if (str[0] != '\0')
+        goto err;
+
+    /* Initialize pkcs11 module. */
+    *(void **)(&get_functionlist) = dlsym(ctx->so_handle,
+                                          "C_GetFunctionList");
+    if (get_functionlist == NULL)
+        goto err;
+    rv = get_functionlist(&ctx->fn);
+    if (rv != CKR_OK)
+        goto err;
+    memset(&initargs, 0, sizeof(initargs));
+    initargs.flags = CKF_OS_LOCKING_OK;
+    rv = ctx->fn->C_Initialize(&initargs);
+    if (rv != CKR_OK && rv != CKR_CRYPTOKI_ALREADY_INITIALIZED)
         goto err;
 
     /* Init successful. */
@@ -164,13 +172,8 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     *provctx = ctx;
     return 1;
 
-    /* Init failed. */
-err:
-    if (ctx != NULL && ctx->so_handle != NULL) {
-        dlclose(ctx->so_handle);
-        ctx->so_handle = NULL;
-    }
-    free(ctx);
+err:/* Init failed. */
+    provider_teardown(ctx);
     return 0;
 }
 
@@ -182,10 +185,17 @@ static void provider_teardown(void *provctx)
 {
     struct p11ctx *ctx = provctx;
 
-    if (ctx != NULL && ctx->so_handle != NULL) {
+    if (ctx == NULL)
+        return;
+
+    if (ctx->fn != NULL)
+        ctx->fn->C_Finalize(NULL);
+
+    if (ctx->so_handle != NULL) {
         dlclose(ctx->so_handle);
         ctx->so_handle = NULL;
     }
+
     free(ctx);
 }
 

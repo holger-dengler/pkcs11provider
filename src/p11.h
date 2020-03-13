@@ -41,9 +41,13 @@
 #  define NULL_PTR NULL
 # endif
 
-# pragma pack(push, 1)
- # include "pkcs11.h" /* official PKCS11 3.0 header */
-# pragma pack(pop)
+# ifndef PKCS11UNPACKED /* for PKCS11 modules that dont pack */
+#  pragma pack(push, 1)
+# endif
+# include "pkcs11.h" /* official PKCS11 3.0 header */
+# ifndef PKCS11UNPACKED
+#  pragma pack(pop)
+# endif
 
 # include <openssl/core.h>
 # include <openssl/core_names.h>
