@@ -14,6 +14,7 @@
 #     OPENSSL_INCLUDES to the include directives required
 #     OPENSSL_LIBS to the -l directives required
 #     OPENSSL_LDFLAGS to the -L or -R flags required
+#     OPENSSL_RPATH to the -rpath required
 #
 #   and calls ACTION-IF-FOUND or ACTION-IF-NOT-FOUND appropriately
 #
@@ -80,6 +81,7 @@ AC_DEFUN([AX_CHECK_OPENSSL], [
                 OPENSSL_INCLUDES="-I$ssldir/include"
                 OPENSSL_LDFLAGS="-L$ssldir/lib"
                 OPENSSL_LIBS="-lssl -lcrypto"
+                OPENSSL_RPATH="$ssldir/lib"
                 found=true
                 AC_MSG_RESULT([yes])
                 break
@@ -121,4 +123,5 @@ AC_DEFUN([AX_CHECK_OPENSSL], [
     AC_SUBST([OPENSSL_INCLUDES])
     AC_SUBST([OPENSSL_LIBS])
     AC_SUBST([OPENSSL_LDFLAGS])
+    AC_SUBST([OPENSSL_RPATH])
 ])
