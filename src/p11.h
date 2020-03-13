@@ -54,12 +54,21 @@
 struct p11ctx {
     const OSSL_PROVIDER *provider;
 
-    /* pkcs11 module */
+    /* default core params */
+    char *openssl_version;
+    char *provider_name;
+    char *module_filename;
+    char *module;
+    /* custom core params */
+    char *pkcs11module;
+    char *pkcs11slotid;
+
+    /* pkcs11 module data */
     void *so_handle;
     CK_FUNCTION_LIST *fn;
     CK_SLOT_ID slotid;
 
-/* Functions offered by libcrypto to the providers */
+   /* functions offered by libcrypto to the providers */
 #define CORE_FN_PTR(name) OSSL_##name##_fn *name
     CORE_FN_PTR(core_gettable_params);
     CORE_FN_PTR(core_get_params);

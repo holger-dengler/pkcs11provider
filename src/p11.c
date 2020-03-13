@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
+#include <dlfcn.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "config.h"
 #include "p11.h"
-#include "p11_module.h"
 
-/* Provider entry point (fixed name, exported) */
+/* provider entry point (fixed name, exported) */
 OSSL_provider_init_fn OSSL_provider_init;
 
-/* Functions offered by the provider to libcrypto */
+/* functions offered by the provider to libcrypto */
 #define PROVIDER_FN(name) static OSSL_##name##_fn name
 PROVIDER_FN(provider_teardown);
 PROVIDER_FN(provider_gettable_params);
@@ -38,34 +38,20 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
                        const OSSL_DISPATCH **out,
                        void **provctx)
 {
-    static const OSSL_DISPATCH functions[] = {
-        {OSSL_FUNC_PROVIDER_TEARDOWN,
-            (void (*)(void))provider_teardown},
-        {OSSL_FUNC_PROVIDER_GETTABLE_PARAMS,
-            (void (*)(void))provider_gettable_params},
-        {OSSL_FUNC_PROVIDER_GET_PARAMS,
-            (void (*)(void))provider_get_params},
-        {OSSL_FUNC_PROVIDER_QUERY_OPERATION,
-            (void (*)(void))provider_query_operation},
-/* XXX
-        {OSSL_FUNC_PROVIDER_GET_REASON_STRINGS,
-            (void (*)(void))provider_get_reason_strings},
-*/
-        {0, NULL}
-    };
-    struct p11ctx *ctx;
+    CK_C_GetFunctionList get_fn;
+    struct p11ctx *ctx = NULL;
+    char *str;
+    CK_RV rv;
     int rc;
 
     ctx = calloc(1, sizeof(*ctx));
     if (ctx == NULL)
-        return 0;
+        goto err;
 
-    rc = p11_module_init(ctx);
-    if (rc != 1)
-        return 0;
-
+    /* Save provider handle. */
     ctx->provider = provider;
 
+    /* Get all core functions. */
     for (; in->function_id != 0; in++) {
         switch (in->function_id) {
 #define CASE(uname, lname)                     \
@@ -106,9 +92,86 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
         }
     }
 
+    /* Check required core functions. */
+    if (ctx->core_get_params == NULL)
+        goto err;
+
+    /* Get all core parameters. */
+    {
+        OSSL_PARAM core_params[] = {
+            /* default params */
+            {"openssl-version", OSSL_PARAM_UTF8_PTR, &ctx->openssl_version, 0, 0},
+            {"provider-name", OSSL_PARAM_UTF8_PTR, &ctx->provider_name, 0, 0},
+            {"module-filename", OSSL_PARAM_UTF8_PTR, &ctx->module_filename, 0, 0},
+            {"module", OSSL_PARAM_UTF8_PTR, &ctx->module, 0, 0},
+            /* custom params */
+            {"pkcs11module", OSSL_PARAM_UTF8_PTR, &ctx->pkcs11module, 0, 0},
+            {"pkcs11slotid", OSSL_PARAM_UTF8_PTR, &ctx->pkcs11slotid, 0, 0},
+            {NULL, 0, NULL, 0, 0}
+        };
+
+        rc = ctx->core_get_params(provider, core_params);
+	if (rc != 1)
+            goto err;
+    }
+
+    /*
+     * If environment variables are set, they take precedence
+     * over the corresponding config file parameters.
+     */
+    str = getenv("PKCS11MODULE");
+    if (str != NULL && str[0] != '\0')
+        ctx->pkcs11module = str;
+    str = getenv("PKCS11SLOTID");
+    if (str != NULL && str[0] != '\0')
+        ctx->pkcs11slotid = str;
+
+    /* Load pkcs11 module entry point. */
+    ctx->so_handle = dlopen(ctx->pkcs11module, RTLD_NOW);
+    if (ctx->so_handle == NULL)
+        goto err;
+    *(void **)(&get_fn) = dlsym(ctx->so_handle, "C_GetFunctionList");
+    if (get_fn == NULL)
+        goto err;
+    rv = get_fn(&ctx->fn);
+    if (rv != CKR_OK)
+        goto err;
+
+    /* Parse slot id. */
+    ctx->slotid = strtoul(ctx->pkcs11slotid, &str, 0);
+    if (str[0] != '\0')
+        goto err;
+
+    /* Init successful. */
+    {
+        static const OSSL_DISPATCH provider_functions[] = {
+            {OSSL_FUNC_PROVIDER_TEARDOWN,
+                (void (*)(void))provider_teardown},
+            {OSSL_FUNC_PROVIDER_GETTABLE_PARAMS,
+                (void (*)(void))provider_gettable_params},
+            {OSSL_FUNC_PROVIDER_GET_PARAMS,
+                (void (*)(void))provider_get_params},
+            {OSSL_FUNC_PROVIDER_QUERY_OPERATION,
+                (void (*)(void))provider_query_operation},
+            /* XXX
+            {OSSL_FUNC_PROVIDER_GET_REASON_STRINGS,
+                (void (*)(void))provider_get_reason_strings},
+            */
+            {0, NULL}
+        };
+        *out = provider_functions;
+    }
     *provctx = ctx;
-    *out = functions;
     return 1;
+
+    /* Init failed. */
+err:
+    if (ctx != NULL && ctx->so_handle != NULL) {
+        dlclose(ctx->so_handle);
+        ctx->so_handle = NULL;
+    }
+    free(ctx);
+    return 0;
 }
 
 /*
@@ -117,8 +180,13 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
  */
 static void provider_teardown(void *provctx)
 {
-    p11_module_fini(provctx);
-    free(provctx);
+    struct p11ctx *ctx = provctx;
+
+    if (ctx != NULL && ctx->so_handle != NULL) {
+        dlclose(ctx->so_handle);
+        ctx->so_handle = NULL;
+    }
+    free(ctx);
 }
 
 /*
@@ -144,15 +212,15 @@ static const OSSL_PARAM *provider_gettable_params(void *provctx)
  */
 static int provider_get_params(void *provctx, OSSL_PARAM params[])
 {
-    UNUSED(provctx);
+    struct p11ctx *ctx = provctx;
 
     for (; params->key != NULL; params++) {
         if (strcmp(params->key, OSSL_PROV_PARAM_NAME) == 0) {
             if (params->data_type != OSSL_PARAM_UTF8_PTR)
                 return 0;
 
-	    params->data = "pkcs11";
-            params->return_size = strlen("pkcs11") + 1;
+	    params->data = ctx->provider_name;
+            params->return_size = strlen(ctx->provider_name) + 1;
 	    continue;
         }
         if (strcmp(params->key, OSSL_PROV_PARAM_VERSION) == 0) {

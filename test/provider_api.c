@@ -92,6 +92,9 @@ int main(int argc, char *argv[])
             OSSL_PROV_PARAM_NAME, (char *)get_param[0].data);
     fprintf(TEST_STREAM, "%s : %s\n",
             OSSL_PROV_PARAM_VERSION, (char *)get_param[1].data);
+
+    if (strcmp(get_param[0].data, "pkcs11") != 0)
+        TEST_EXIT_FAIL();
     
     /* unload */
 
