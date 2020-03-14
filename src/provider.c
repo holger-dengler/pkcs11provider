@@ -173,6 +173,18 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     if (rv != CKR_OK)
         goto err;
 
+    /* Get the slot's mechanism list. */
+    rv = ctx->fn->C_GetMechanismList(ctx->slotid, NULL, &ctx->mechcount);
+    if (rv != CKR_OK)
+        goto err;
+    ctx->mechlist = calloc(ctx->mechcount, sizeof(*ctx->mechlist));
+    if (ctx->mechlist == NULL)
+        goto err;
+    rv = ctx->fn->C_GetMechanismList(ctx->slotid,
+                                     ctx->mechlist, &ctx->mechcount);
+    if (rv != CKR_OK)
+        goto err;
+
     /* Init successful. */
     {
         static const OSSL_DISPATCH provider_functions[] = {
@@ -221,6 +233,10 @@ static void provider_teardown(void *provctx)
     }
     pthread_mutex_unlock(&provider_init.mutex);
 
+    if (ctx->mechlist != NULL) {
+        free(ctx->mechlist);
+        ctx->mechlist = NULL;
+    }
     if (ctx->so_handle != NULL) {
         dlclose(ctx->so_handle);
         ctx->so_handle = NULL;

@@ -71,6 +71,8 @@ struct provctx {
     void *so_handle;
     CK_FUNCTION_LIST *fn;
     CK_SLOT_ID slotid;
+    CK_MECHANISM_TYPE *mechlist;
+    CK_ULONG mechcount;
 
    /* functions offered by libcrypto to the providers */
 #define CORE_FN_PTR(name) OSSL_##name##_fn *name
