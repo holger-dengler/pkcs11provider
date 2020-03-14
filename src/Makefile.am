@@ -13,7 +13,8 @@ pkcs11_la_SOURCES = \
     pkcs11.h \
     pkcs11t.h \
     pkcs11f.h \
-    p11.h p11.c
+    provctx.h \
+    provider.c
 
 EXTRA_DIST = \
     provider.map

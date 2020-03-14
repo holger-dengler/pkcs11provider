@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef P11_H
-# define P11_H
+#ifndef P11_PROVCTX_H
+# define P11_PROVCTX_H
 
 # ifndef CK_PTR
 #  define CK_PTR *
@@ -55,7 +55,7 @@
 
 # define UNUSED(var) (void)(var)
 
-struct p11ctx {
+struct provctx {
     const OSSL_PROVIDER *provider;
 
     /* default core params */

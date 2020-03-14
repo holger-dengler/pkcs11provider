@@ -20,7 +20,7 @@
 #include <string.h>
 
 #include "config.h"
-#include "p11.h"
+#include "provctx.h"
 
 /* provider entry point (fixed name, exported) */
 OSSL_provider_init_fn OSSL_provider_init;
@@ -53,7 +53,7 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
                        void **provctx)
 {
     CK_C_GetFunctionList get_functionlist;
-    struct p11ctx *ctx = NULL;
+    struct provctx *ctx = NULL;
     char *str;
     CK_RV rv;
     int rc;
@@ -207,7 +207,7 @@ err:/* Init failed. */
  */
 static void provider_teardown(void *provctx)
 {
-    struct p11ctx *ctx = provctx;
+    struct provctx *ctx = provctx;
 
     if (ctx == NULL)
         return;
@@ -253,7 +253,7 @@ static const OSSL_PARAM *provider_gettable_params(void *provctx)
  */
 static int provider_get_params(void *provctx, OSSL_PARAM params[])
 {
-    struct p11ctx *ctx = provctx;
+    struct provctx *ctx = provctx;
 
     for (; params->key != NULL; params++) {
         if (strcmp(params->key, OSSL_PROV_PARAM_NAME) == 0) {
