@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
+#include <assert.h>
 #include <stdlib.h>
 
 #include "tables.h"
 
 int tables_create(struct provctx *ctx)
 {
-    if (ctx == NULL)
-        return 0;
+    assert(ctx != NULL);
 
     ctx->digest = NULL;
     ctx->cipher = NULL;
@@ -37,8 +37,7 @@ int tables_create(struct provctx *ctx)
 
 void tables_destroy(struct provctx *ctx)
 {
-    if (ctx == NULL)
-        return;
+    assert(ctx != NULL);
 
     free(ctx->digest);
     free(ctx->cipher);

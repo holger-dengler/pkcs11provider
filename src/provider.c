@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <assert.h>
 #include <dlfcn.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -60,6 +61,11 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     char *str;
     CK_RV rv;
     int rc;
+
+    assert(provider != NULL);
+    assert(in != NULL);
+    assert(out != NULL);
+    assert(provctx != NULL);
 
     ctx = calloc(1, sizeof(*ctx));
     if (ctx == NULL)
@@ -228,8 +234,7 @@ static void provider_teardown(void *provctx)
 {
     struct provctx *ctx = provctx;
 
-    if (ctx == NULL)
-        return;
+    assert(provctx != NULL);
 
     tables_destroy(ctx);
 
@@ -268,7 +273,7 @@ static const OSSL_PARAM *provider_gettable_params(void *provctx)
         {NULL, 0, NULL, 0, 0}
     };
 
-    UNUSED(provctx);
+    assert(provctx != NULL);
 
     return gettable_params;
 }
@@ -280,6 +285,9 @@ static const OSSL_PARAM *provider_gettable_params(void *provctx)
 static int provider_get_params(void *provctx, OSSL_PARAM params[])
 {
     struct provctx *ctx = provctx;
+
+    assert(provctx != NULL);
+    assert(params != NULL);
 
     for (; params->key != NULL; params++) {
         if (strcmp(params->key, OSSL_PROV_PARAM_NAME) == 0) {
@@ -315,10 +323,8 @@ static const OSSL_ALGORITHM *provider_query_operation(void *provctx,
 {
     struct provctx *ctx = provctx;
 
-    UNUSED(no_store);
-
-    if (provctx == NULL)
-        return NULL;
+    assert(provctx != NULL);
+    assert(no_store != NULL);
 
     switch (operation_id) {
     case OSSL_OP_DIGEST:
@@ -454,7 +460,7 @@ static const OSSL_ITEM *provider_get_reason_strings(void *provctx)
         {0, NULL}
     };
 
-    UNUSED(provctx);
+    assert(provctx != NULL);
 
     return reason_strings;
 }
