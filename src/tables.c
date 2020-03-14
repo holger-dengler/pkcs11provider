@@ -19,19 +19,35 @@
 
 #include "tables.h"
 
+#define DECLARE_TBL(name)                             \
+static int __tbl_##name##_create(struct provctx *);   \
+static void __tbl_##name##_destroy(struct provctx *);
+DECLARE_TBL(digest);
+DECLARE_TBL(cipher);
+DECLARE_TBL(mac);
+DECLARE_TBL(kdf);
+DECLARE_TBL(keymgmt);
+DECLARE_TBL(keyexch);
+DECLARE_TBL(signature);
+DECLARE_TBL(asym_cipher);
+DECLARE_TBL(serializer);
+#undef DECLARE_TBL
+
 int tables_create(struct provctx *ctx)
 {
     assert(ctx != NULL);
 
-    ctx->digest = NULL;
-    ctx->cipher = NULL;
-    ctx->mac = NULL;
-    ctx->kdf = NULL;
-    ctx->keymgmt = NULL;
-    ctx->keyexch = NULL;
-    ctx->signature = NULL;
-    ctx->asym_cipher = NULL;
-    ctx->serializer = NULL;
+    if (__tbl_digest_create(ctx) != 1
+        || __tbl_cipher_create(ctx) != 1
+        || __tbl_mac_create(ctx) != 1
+        || __tbl_kdf_create(ctx) != 1
+        || __tbl_keymgmt_create(ctx) != 1
+        || __tbl_keyexch_create(ctx) != 1
+        || __tbl_signature_create(ctx) != 1
+        || __tbl_asym_cipher_create(ctx) != 1
+        || __tbl_serializer_create(ctx) != 1)
+        return 0;
+
     return 1;
 }
 
@@ -39,22 +55,35 @@ void tables_destroy(struct provctx *ctx)
 {
     assert(ctx != NULL);
 
-    free(ctx->digest);
-    free(ctx->cipher);
-    free(ctx->mac);
-    free(ctx->kdf);
-    free(ctx->keymgmt);
-    free(ctx->keyexch);
-    free(ctx->signature);
-    free(ctx->asym_cipher);
-    free(ctx->serializer);
-    ctx->digest = NULL;
-    ctx->cipher = NULL;
-    ctx->mac = NULL;
-    ctx->kdf = NULL;
-    ctx->keymgmt = NULL;
-    ctx->keyexch = NULL;
-    ctx->signature = NULL;
-    ctx->asym_cipher = NULL;
-    ctx->serializer = NULL;
+    __tbl_digest_destroy(ctx);
+    __tbl_cipher_destroy(ctx);
+    __tbl_mac_destroy(ctx);
+    __tbl_kdf_destroy(ctx);
+    __tbl_keymgmt_destroy(ctx);
+    __tbl_keyexch_destroy(ctx);
+    __tbl_signature_destroy(ctx);
+    __tbl_asym_cipher_destroy(ctx);
+    __tbl_serializer_destroy(ctx);
 }
+
+#define DEFINE_TBL_UNIMPLEMENTED(name)                  \
+static int __tbl_##name##_create(struct provctx *ctx)   \
+{                                                       \
+    assert(ctx != NULL);                                \
+    ctx->name = NULL;                                   \
+    return 1;                                           \
+}                                                       \
+static void __tbl_##name##_destroy(struct provctx *ctx) \
+{                                                       \
+    assert(ctx != NULL);                                \
+}
+DEFINE_TBL_UNIMPLEMENTED(digest);
+DEFINE_TBL_UNIMPLEMENTED(cipher);
+DEFINE_TBL_UNIMPLEMENTED(mac);
+DEFINE_TBL_UNIMPLEMENTED(kdf);
+DEFINE_TBL_UNIMPLEMENTED(keymgmt);
+DEFINE_TBL_UNIMPLEMENTED(keyexch);
+DEFINE_TBL_UNIMPLEMENTED(signature);
+DEFINE_TBL_UNIMPLEMENTED(asym_cipher);
+DEFINE_TBL_UNIMPLEMENTED(serializer);
+#undef DEFINE_TBL_UNIMPLEMENTED
