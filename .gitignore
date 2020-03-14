@@ -1,6 +1,7 @@
 *.o
 *.lo
 *.la
+*.swp
 test/*.trs
 test/*.log
 aclocal.m4
