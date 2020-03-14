@@ -132,6 +132,7 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
             /* custom params */
             {"pkcs11module", OSSL_PARAM_UTF8_PTR, &ctx->pkcs11module, 0, 0},
             {"pkcs11slotid", OSSL_PARAM_UTF8_PTR, &ctx->pkcs11slotid, 0, 0},
+            {"pkcs11userpin", OSSL_PARAM_UTF8_PTR, &ctx->pkcs11userpin, 0, 0},
             {NULL, 0, NULL, 0, 0}
         };
 
@@ -150,6 +151,9 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     str = getenv("PKCS11SLOTID");
     if (str != NULL && str[0] != '\0')
         ctx->pkcs11slotid = str;
+    str = getenv("PKCS11USERPIN");
+    if (str != NULL && str[0] != '\0')
+        ctx->pkcs11userpin = str;
 
     ctx->so_handle = dlopen(ctx->pkcs11module, RTLD_NOW);
     if (ctx->so_handle == NULL)

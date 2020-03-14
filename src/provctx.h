@@ -66,6 +66,7 @@ struct provctx {
     /* custom core params */
     char *pkcs11module;
     char *pkcs11slotid;
+    char *pkcs11userpin;
 
     /* pkcs11 module data */
     void *so_handle;
