@@ -17,6 +17,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "rsa.h"
 #include "tables.h"
 
 #define DECLARE_TBL(name)                             \
@@ -81,9 +82,38 @@ DEFINE_TBL_UNIMPLEMENTED(digest);
 DEFINE_TBL_UNIMPLEMENTED(cipher);
 DEFINE_TBL_UNIMPLEMENTED(mac);
 DEFINE_TBL_UNIMPLEMENTED(kdf);
-DEFINE_TBL_UNIMPLEMENTED(keymgmt);
 DEFINE_TBL_UNIMPLEMENTED(keyexch);
 DEFINE_TBL_UNIMPLEMENTED(signature);
 DEFINE_TBL_UNIMPLEMENTED(asym_cipher);
 DEFINE_TBL_UNIMPLEMENTED(serializer);
 #undef DEFINE_TBL_UNIMPLEMENTED
+
+
+static int __tbl_keymgmt_create(struct provctx *ctx)
+{
+    OSSL_ALGORITHM *tbl = NULL;
+    int idx = 0;
+
+    tbl = calloc(2, sizeof(*tbl));
+    if (tbl == NULL)
+        return 0;
+
+    if (rsa_available(ctx) == 1) {
+        tbl[idx].algorithm_names = "RSA:rsaEncryption";
+        tbl[idx].property_definition = "provider=pkcs11";
+        tbl[idx].implementation = rsa_keymgmt();
+	idx++;
+    }
+
+    tbl[idx].algorithm_names = NULL; /* last list element */
+    ctx->keymgmt = tbl;
+    return 1;
+}
+
+static void __tbl_keymgmt_destroy(struct provctx *ctx)
+{
+    assert(ctx != NULL);
+
+    free(ctx->keymgmt);
+    ctx->keymgmt = NULL;
+}

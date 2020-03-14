@@ -15,7 +15,8 @@ pkcs11_la_SOURCES = \
     pkcs11f.h \
     provctx.h \
     provider.c \
-    tables.h tables.c
+    tables.h tables.c \
+    rsa.h rsa.c
 
 EXTRA_DIST = \
     provider.map
