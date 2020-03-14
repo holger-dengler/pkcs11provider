@@ -1,6 +1,7 @@
 *.o
 *.lo
 *.la
+*.swo
 *.swp
 test/*.trs
 test/*.log
