@@ -35,17 +35,16 @@ PROVIDER_FN(provider_get_reason_strings);
 #undef PROVIDER_FN
 
 /*
- * Provider global mutex and refcount.
+ * Provider global initialization mutex and refcount.
  * Used to serialize C_Initialize and C_Finalize calls: The pkcs11 module is
  * initialized when the first provider context is allocated and finalized when
  * the last provider context is freed. For details on pkcs11 multi-threading,
  * see [pkcs11 ug].
  */
-struct global {
+struct {
     pthread_mutex_t mutex;
     unsigned int refcount;
-};
-static struct global glob = {PTHREAD_MUTEX_INITIALIZER, 0};
+} provider_init = {PTHREAD_MUTEX_INITIALIZER, 0};
 
 int OSSL_provider_init(const OSSL_PROVIDER *provider,
                        const OSSL_DISPATCH *in,
@@ -159,18 +158,18 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
         goto err;
 
     /* Initialize pkcs11 module. */
-    pthread_mutex_lock(&glob.mutex);
-    if (glob.refcount == 0) {
+    pthread_mutex_lock(&provider_init.mutex);
+    if (provider_init.refcount == 0) {
         CK_C_INITIALIZE_ARGS initargs = {0};
         initargs.flags = CKF_OS_LOCKING_OK;
 
         rv = ctx->fn->C_Initialize(&initargs);
         if (rv == CKR_OK)
-            glob.refcount = 1;
+            provider_init.refcount = 1;
     } else {
-        glob.refcount++;
+        provider_init.refcount++;
     }
-    pthread_mutex_unlock(&glob.mutex);
+    pthread_mutex_unlock(&provider_init.mutex);
     if (rv != CKR_OK)
         goto err;
 
@@ -213,14 +212,14 @@ static void provider_teardown(void *provctx)
         return;
 
     /* Finalize pkcs11 module. */
-    pthread_mutex_lock(&glob.mutex);
-    if (glob.refcount > 0) {
-        glob.refcount--;
+    pthread_mutex_lock(&provider_init.mutex);
+    if (provider_init.refcount > 0) {
+        provider_init.refcount--;
 
-        if (glob.refcount == 0)
+        if (provider_init.refcount == 0)
             ctx->fn->C_Finalize(NULL);
     }
-    pthread_mutex_unlock(&glob.mutex);
+    pthread_mutex_unlock(&provider_init.mutex);
 
     if (ctx->so_handle != NULL) {
         dlclose(ctx->so_handle);
