@@ -21,6 +21,7 @@
 
 #include "config.h"
 #include "provctx.h"
+#include "tables.h"
 
 /* provider entry point (fixed name, exported) */
 OSSL_provider_init_fn OSSL_provider_init;
@@ -44,7 +45,10 @@ PROVIDER_FN(provider_get_reason_strings);
 struct {
     pthread_mutex_t mutex;
     unsigned int refcount;
-} provider_init = {PTHREAD_MUTEX_INITIALIZER, 0};
+} provider_init = {
+    PTHREAD_MUTEX_INITIALIZER,
+    0
+};
 
 int OSSL_provider_init(const OSSL_PROVIDER *provider,
                        const OSSL_DISPATCH *in,
@@ -185,6 +189,10 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     if (rv != CKR_OK)
         goto err;
 
+    rc = tables_create(ctx);
+    if (rc != 1)
+        goto err;
+
     /* Init successful. */
     {
         static const OSSL_DISPATCH provider_functions[] = {
@@ -223,6 +231,13 @@ static void provider_teardown(void *provctx)
     if (ctx == NULL)
         return;
 
+    tables_destroy(ctx);
+
+    if (ctx->mechlist != NULL) {
+        free(ctx->mechlist);
+        ctx->mechlist = NULL;
+    }
+
     /* Finalize pkcs11 module. */
     pthread_mutex_lock(&provider_init.mutex);
     if (provider_init.refcount > 0) {
@@ -233,10 +248,6 @@ static void provider_teardown(void *provctx)
     }
     pthread_mutex_unlock(&provider_init.mutex);
 
-    if (ctx->mechlist != NULL) {
-        free(ctx->mechlist);
-        ctx->mechlist = NULL;
-    }
     if (ctx->so_handle != NULL) {
         dlclose(ctx->so_handle);
         ctx->so_handle = NULL;
@@ -302,10 +313,32 @@ static const OSSL_ALGORITHM *provider_query_operation(void *provctx,
                                                       int operation_id,
                                                       const int *no_store)
 {
-    UNUSED(provctx);
+    struct provctx *ctx = provctx;
+
     UNUSED(no_store);
 
+    if (provctx == NULL)
+        return NULL;
+
     switch (operation_id) {
+    case OSSL_OP_DIGEST:
+        return ctx->digest;
+    case OSSL_OP_CIPHER:
+        return ctx->cipher;
+    case OSSL_OP_MAC:
+        return ctx->mac;
+    case OSSL_OP_KDF:
+        return ctx->kdf;
+    case OSSL_OP_KEYMGMT:
+        return ctx->keymgmt;
+    case OSSL_OP_KEYEXCH:
+        return ctx->keyexch;
+    case OSSL_OP_SIGNATURE:
+        return ctx->signature;
+    case OSSL_OP_ASYM_CIPHER:
+        return ctx->asym_cipher;
+    case OSSL_OP_SERIALIZER:
+        return ctx->serializer;
     default:
         break;
     }

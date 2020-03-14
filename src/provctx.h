@@ -74,6 +74,17 @@ struct provctx {
     CK_MECHANISM_TYPE *mechlist;
     CK_ULONG mechcount;
 
+    /* operation dispatch tables */
+    OSSL_ALGORITHM *digest;
+    OSSL_ALGORITHM *cipher;
+    OSSL_ALGORITHM *mac;
+    OSSL_ALGORITHM *kdf;
+    OSSL_ALGORITHM *keymgmt;
+    OSSL_ALGORITHM *keyexch;
+    OSSL_ALGORITHM *signature;
+    OSSL_ALGORITHM *asym_cipher;
+    OSSL_ALGORITHM *serializer;
+
    /* functions offered by libcrypto to the providers */
 #define CORE_FN_PTR(name) OSSL_##name##_fn *name
     CORE_FN_PTR(core_gettable_params);
