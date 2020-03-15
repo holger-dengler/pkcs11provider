@@ -116,8 +116,12 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     }
 
     /* Check required core functions. */
-    if (ctx->core_get_params == NULL)
+    if (ctx->core_get_params == NULL
+        || ctx->core_get_library_context == NULL)
         goto err;
+
+    /* Save libctx handle. */
+    ctx->libctx = ctx->core_get_library_context(provider);
 
     /* Get all core parameters. */
     {

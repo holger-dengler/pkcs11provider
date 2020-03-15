@@ -57,6 +57,7 @@
 
 struct provctx {
     const OSSL_PROVIDER *provider;
+    OPENSSL_CTX *libctx;
 
     /* default core params */
     char *openssl_version;
