@@ -58,6 +58,7 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
 {
     CK_C_GetFunctionList get_functionlist;
     struct provctx *ctx = NULL;
+    CK_FLAGS flags;
     char *str;
     CK_RV rv;
     int rc;
@@ -217,6 +218,17 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     if (rc != 1)
         goto err;
 
+    /* Open a user R/O session: all future sessions will be user sessions. */
+    flags = CKF_SERIAL_SESSION;
+    rv = ctx->fn->C_OpenSession(ctx->slotid, flags, NULL, NULL, &ctx->session);
+    if (rv != CKR_OK)
+        goto err;
+    rv = ctx->fn->C_Login(ctx->session, CKU_USER,
+                          (CK_UTF8CHAR *)ctx->pkcs11userpin,
+                          strlen(ctx->pkcs11userpin));
+    if (rv != CKR_OK && rv != CKR_USER_ALREADY_LOGGED_IN)
+        goto err;
+
     /* Init successful. */
     {
         static const OSSL_DISPATCH provider_functions[] = {
@@ -253,6 +265,9 @@ static void provider_teardown(void *provctx)
     struct provctx *ctx = provctx;
 
     assert(provctx != NULL);
+
+    ctx->fn->C_Logout(ctx->session);
+    ctx->fn->C_CloseSession(ctx->session);
 
     tables_destroy(ctx);
 

@@ -75,6 +75,7 @@ struct provctx {
     CK_SLOT_ID slotid;
     CK_MECHANISM_TYPE *mechlist;
     CK_ULONG mechcount;
+    CK_SESSION_HANDLE session;
 
     /* operation dispatch tables */
     OSSL_ALGORITHM *digest;
