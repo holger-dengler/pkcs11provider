@@ -31,6 +31,7 @@ pkcs11 = pkcs11_sect
 module = pkcs11.so
 pkcs11module = <mymodule.so>
 pkcs11slotid = <myslotid>
+pkcs11userpin = <myuserpin>
 ```
 
 Querying the provider via the CLI:
@@ -48,4 +49,4 @@ if (OSSL_PROVIDER_unload(prov) != 1)
     /* handle error */;
 ```
 
-The pkcs11 module shared object resp. the pkcs11 slot id can also be specified by setting the PKCS11MODULE resp. PKCS11SLOTID environment variable. If the environment variable is set, it will take precedence over the config file setting.
+The pkcs11 module shared object, slot id resp. user pin can also be specified by setting the PKCS11MODULE, PKCS11SLOTID resp. PKCS11USERPIN environment variable. If the environment variable is set, it will take precedence over the config file setting.
