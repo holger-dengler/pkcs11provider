@@ -176,7 +176,11 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     if (rv != CKR_OK)
         goto err;
 
-    /* Initialize pkcs11 module. */
+    /*
+     * Initialize the global pkcs11 module now if it has not already been
+     * initialized at an earlier provider context object initialization.
+     * If the module is already initialized, increment its reference count.
+     */
     pthread_mutex_lock(&provider_init.mutex);
     if (provider_init.refcount == 0) {
         CK_C_INITIALIZE_ARGS initargs = {0};
@@ -204,6 +208,7 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     if (rv != CKR_OK)
         goto err;
 
+    /* Create operation dispatch tables. */
     rc = tables_create(ctx);
     if (rc != 1)
         goto err;
@@ -252,7 +257,10 @@ static void provider_teardown(void *provctx)
         ctx->mechlist = NULL;
     }
 
-    /* Finalize pkcs11 module. */
+    /*
+     * Decrement global pkcs11 module's reference count
+     * and finalize if it drops to zero.
+     */
     pthread_mutex_lock(&provider_init.mutex);
     if (provider_init.refcount > 0) {
         provider_init.refcount--;
