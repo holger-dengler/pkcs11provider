@@ -155,6 +155,11 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     if (str != NULL && str[0] != '\0')
         ctx->pkcs11userpin = str;
 
+    if (ctx->pkcs11module == NULL
+        || ctx->pkcs11slotid == NULL
+        || ctx->pkcs11userpin == NULL)
+        goto err;
+
     ctx->so_handle = dlopen(ctx->pkcs11module, RTLD_NOW);
     if (ctx->so_handle == NULL)
         goto err;
@@ -162,7 +167,7 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     if (str[0] != '\0')
         goto err;
 
-    /* Get pkcs11 module. entry point. */
+    /* Get pkcs11 module entry point. */
     *(void **)(&get_functionlist) = dlsym(ctx->so_handle,
                                           "C_GetFunctionList");
     if (get_functionlist == NULL)
