@@ -17,38 +17,6 @@
 #ifndef P11_PROVCTX_H
 # define P11_PROVCTX_H
 
-# ifndef CK_PTR
-#  define CK_PTR *
-# endif
-
-# ifndef CK_DECLARE_FUNCTION
-#  define CK_DECLARE_FUNCTION(returnType, name) \
-       returnType name
-# endif
-
-# ifndef CK_DECLARE_FUNCTION_POINTER
-#  define CK_DECLARE_FUNCTION_POINTER(returnType, name) \
-       returnType (CK_PTR name)
-# endif
-
-# ifndef CK_CALLBACK_FUNCTION
-#  define CK_CALLBACK_FUNCTION(returnType, name) \
-       returnType (CK_PTR name)
-# endif
-
-# ifndef NULL_PTR
-#  include <stddef.h> /* provides NULL */
-#  define NULL_PTR NULL
-# endif
-
-# ifndef PKCS11UNPACKED /* for PKCS11 modules that dont pack */
-#  pragma pack(push, 1)
-# endif
-# include "pkcs11.h" /* official PKCS11 3.0 header */
-# ifndef PKCS11UNPACKED
-#  pragma pack(pop)
-# endif
-
 # include <openssl/core.h>
 # include <openssl/core_names.h>
 # include <openssl/core_numbers.h>
@@ -64,18 +32,6 @@ struct provctx {
     char *provider_name;
     char *module_filename;
     char *module;
-    /* custom core params */
-    char *pkcs11module;
-    char *pkcs11slotid;
-    char *pkcs11userpin;
-
-    /* pkcs11 module data */
-    void *so_handle;
-    CK_FUNCTION_LIST *fn;
-    CK_SLOT_ID slotid;
-    CK_MECHANISM_TYPE *mechlist;
-    CK_ULONG mechcount;
-    CK_SESSION_HANDLE session;
 
     /* operation dispatch tables */
     OSSL_ALGORITHM *digest;

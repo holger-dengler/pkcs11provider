@@ -10,10 +10,6 @@ pkcs11_la_CFLAGS = \
     $(OPENSSL_INCLUDES) -pthread
 
 pkcs11_la_SOURCES = \
-    pkcs11.h \
-    pkcs11t.h \
-    pkcs11f.h \
-    provctx.h \
     provider.c \
     tables.h tables.c \
     rsa.h rsa.c
