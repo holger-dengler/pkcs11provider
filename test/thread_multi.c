@@ -172,6 +172,7 @@ static char *use_provider(OPENSSL_CTX *ctx, OSSL_PROVIDER *prov)
 {
     const OSSL_PARAM *gettable_params = NULL;
     OSSL_PARAM get_param[3] = {0};
+    const char *ccp[2] = { NULL, NULL };
     const char *name = NULL;
     char *str = NULL;
     int rc;
@@ -209,13 +210,13 @@ static char *use_provider(OPENSSL_CTX *ctx, OSSL_PROVIDER *prov)
 
     get_param[0].key = OSSL_PROV_PARAM_NAME;
     get_param[0].data_type = OSSL_PARAM_UTF8_PTR;
-    get_param[0].data = NULL;
+    get_param[0].data = &ccp[0];
     get_param[0].data_size = 0;
     get_param[0].return_size = 0;
 
     get_param[1].key = OSSL_PROV_PARAM_VERSION;
     get_param[1].data_type = OSSL_PARAM_UTF8_PTR;
-    get_param[1].data = NULL;
+    get_param[1].data = &ccp[1];
     get_param[1].data_size = 0;
     get_param[1].return_size = 0;
 

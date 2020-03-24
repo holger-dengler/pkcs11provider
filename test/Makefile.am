@@ -4,7 +4,8 @@ AM_TESTS_ENVIRONMENT = export OPENSSL_MODULES=${top_builddir}/src/.libs; \
 
 LDADD = @OPENSSL_LIBS@
 AM_LDFLAGS = @OPENSSL_LDFLAGS@
-AM_CFLAGS = -pthread
+AM_CFLAGS = -pthread -Wall -Werror
+AM_CPPFLAGS = @OPENSSL_INCLUDES@
 
 TESTS = \
     provider_api \
