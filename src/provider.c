@@ -24,6 +24,8 @@
 #include "provctx.h"
 #include "tables.h"
 
+#define UNUSED_FN __attribute__((unused))
+
 /* provider entry point (fixed name, exported) */
 OSSL_provider_init_fn OSSL_provider_init;
 
@@ -33,7 +35,7 @@ PROVIDER_FN(provider_teardown);
 PROVIDER_FN(provider_gettable_params);
 PROVIDER_FN(provider_get_params);
 PROVIDER_FN(provider_query_operation);
-PROVIDER_FN(provider_get_reason_strings);
+PROVIDER_FN(provider_get_reason_strings) UNUSED_FN;
 #undef PROVIDER_FN
 
 /*
@@ -78,34 +80,34 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
         case OSSL_FUNC_##uname:                \
             ctx->lname = OSSL_get_##lname(in); \
             break
-	CASE(CORE_GETTABLE_PARAMS, core_gettable_params);
-	CASE(CORE_GET_PARAMS, core_get_params);
-	CASE(CORE_THREAD_START, core_thread_start);
-	CASE(CORE_GET_LIBRARY_CONTEXT, core_get_library_context);
-	CASE(CORE_NEW_ERROR, core_new_error);
-	CASE(CORE_SET_ERROR_DEBUG, core_set_error_debug);
-	CASE(CORE_VSET_ERROR, core_vset_error);
-	CASE(CORE_SET_ERROR_MARK, core_set_error_mark);
-	CASE(CORE_CLEAR_LAST_ERROR_MARK, core_clear_last_error_mark);
-	CASE(CORE_POP_ERROR_TO_MARK, core_pop_error_to_mark);
-	CASE(CRYPTO_MALLOC, CRYPTO_malloc);
-	CASE(CRYPTO_ZALLOC, CRYPTO_zalloc);
-	CASE(CRYPTO_FREE, CRYPTO_free);
-	CASE(CRYPTO_CLEAR_FREE, CRYPTO_clear_free);
-	CASE(CRYPTO_REALLOC, CRYPTO_realloc);
-	CASE(CRYPTO_CLEAR_REALLOC, CRYPTO_clear_realloc);
-	CASE(CRYPTO_SECURE_MALLOC, CRYPTO_secure_malloc);
-	CASE(CRYPTO_SECURE_ZALLOC, CRYPTO_secure_zalloc);
-	CASE(CRYPTO_SECURE_FREE, CRYPTO_secure_free);
-	CASE(CRYPTO_SECURE_CLEAR_FREE, CRYPTO_secure_clear_free);
-	CASE(CRYPTO_SECURE_ALLOCATED, CRYPTO_secure_allocated);
-	CASE(OPENSSL_CLEANSE, OPENSSL_cleanse);
-	CASE(BIO_NEW_FILE, BIO_new_file);
-	CASE(BIO_NEW_MEMBUF, BIO_new_membuf);
-	CASE(BIO_READ_EX, BIO_read_ex);
-	CASE(BIO_FREE, BIO_free);
-	CASE(BIO_VPRINTF, BIO_vprintf);
-	CASE(SELF_TEST_CB, self_test_cb);
+        CASE(CORE_GETTABLE_PARAMS, core_gettable_params);
+        CASE(CORE_GET_PARAMS, core_get_params);
+        CASE(CORE_THREAD_START, core_thread_start);
+        CASE(CORE_GET_LIBRARY_CONTEXT, core_get_library_context);
+        CASE(CORE_NEW_ERROR, core_new_error);
+        CASE(CORE_SET_ERROR_DEBUG, core_set_error_debug);
+        CASE(CORE_VSET_ERROR, core_vset_error);
+        CASE(CORE_SET_ERROR_MARK, core_set_error_mark);
+        CASE(CORE_CLEAR_LAST_ERROR_MARK, core_clear_last_error_mark);
+        CASE(CORE_POP_ERROR_TO_MARK, core_pop_error_to_mark);
+        CASE(CRYPTO_MALLOC, CRYPTO_malloc);
+        CASE(CRYPTO_ZALLOC, CRYPTO_zalloc);
+        CASE(CRYPTO_FREE, CRYPTO_free);
+        CASE(CRYPTO_CLEAR_FREE, CRYPTO_clear_free);
+        CASE(CRYPTO_REALLOC, CRYPTO_realloc);
+        CASE(CRYPTO_CLEAR_REALLOC, CRYPTO_clear_realloc);
+        CASE(CRYPTO_SECURE_MALLOC, CRYPTO_secure_malloc);
+        CASE(CRYPTO_SECURE_ZALLOC, CRYPTO_secure_zalloc);
+        CASE(CRYPTO_SECURE_FREE, CRYPTO_secure_free);
+        CASE(CRYPTO_SECURE_CLEAR_FREE, CRYPTO_secure_clear_free);
+        CASE(CRYPTO_SECURE_ALLOCATED, CRYPTO_secure_allocated);
+        CASE(OPENSSL_CLEANSE, OPENSSL_cleanse);
+        CASE(BIO_NEW_FILE, BIO_new_file);
+        CASE(BIO_NEW_MEMBUF, BIO_new_membuf);
+        CASE(BIO_READ_EX, BIO_read_ex);
+        CASE(BIO_FREE, BIO_free);
+        CASE(BIO_VPRINTF, BIO_vprintf);
+        CASE(SELF_TEST_CB, self_test_cb);
 #undef CASE
         default:
             break;
@@ -135,7 +137,7 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
         };
 
         rc = ctx->core_get_params(provider, core_params);
-	if (rc != 1)
+        if (rc != 1)
             goto err;
     }
 
@@ -164,7 +166,7 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     *provctx = ctx;
     return 1;
 
-err:/* Init failed. */
+ err:/* Init failed. */
     provider_teardown(ctx);
     return 0;
 }
@@ -216,17 +218,17 @@ static int provider_get_params(void *provctx, OSSL_PARAM params[])
             if (params->data_type != OSSL_PARAM_UTF8_PTR)
                 return 0;
 
-	    params->data = ctx->provider_name;
+            *((char **)params->data) = ctx->provider_name;
             params->return_size = strlen(ctx->provider_name) + 1;
-	    continue;
+            continue;
         }
         if (strcmp(params->key, OSSL_PROV_PARAM_VERSION) == 0) {
             if (params->data_type != OSSL_PARAM_UTF8_PTR)
                 return 0;
 
-	    params->data = VERSION;
+            *((char **)params->data) = VERSION;
             params->return_size = strlen(VERSION) + 1;
-	    continue;
+            continue;
         }
     }
 

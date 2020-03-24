@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
     const OSSL_PARAM *gettable_params;
     OSSL_PARAM get_param[3];
     OSSL_PROVIDER *prov;
+    const char *ccp[2] = { NULL, NULL };
     const char *str;
     int rc, i;
 
@@ -73,13 +74,13 @@ int main(int argc, char *argv[])
 
     get_param[0].key = OSSL_PROV_PARAM_NAME;
     get_param[0].data_type = OSSL_PARAM_UTF8_PTR;
-    get_param[0].data = NULL;
+    get_param[0].data = &ccp[0];
     get_param[0].data_size = 0;
     get_param[0].return_size = 0;
 
     get_param[1].key = OSSL_PROV_PARAM_VERSION;
     get_param[1].data_type = OSSL_PARAM_UTF8_PTR;
-    get_param[1].data = NULL;
+    get_param[1].data = &ccp[1];
     get_param[1].data_size = 0;
     get_param[1].return_size = 0;
 
@@ -90,11 +91,11 @@ int main(int argc, char *argv[])
         TEST_EXIT_FAIL_MSG("OSSL_PROVIDER_get_params returned %d", rc);
 
     fprintf(TEST_STREAM, "%s : %s\n",
-            OSSL_PROV_PARAM_NAME, (char *)get_param[0].data);
+            OSSL_PROV_PARAM_NAME, ccp[0]);
     fprintf(TEST_STREAM, "%s : %s\n",
-            OSSL_PROV_PARAM_VERSION, (char *)get_param[1].data);
+            OSSL_PROV_PARAM_VERSION, ccp[1]);
 
-    if (strcmp(get_param[0].data, "pkcs11") != 0)
+    if (strcmp(ccp[0], "pkcs11") != 0)
         TEST_EXIT_FAIL();
     
     /* unload */
