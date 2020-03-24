@@ -34,13 +34,14 @@ static void *dedicated_ctx_dedicated_prov(void *);
 static void *shared_ctx_dedicated_prov(void *);
 static void *shared_ctx_shared_prov(void *);
 
-static void use_provider(OPENSSL_CTX *, OSSL_PROVIDER *);
+static char *use_provider(OPENSSL_CTX *, OSSL_PROVIDER *);
 
 int main(int argc, char *argv[])
 {
     pthread_t threads[TESTS * THREADS];
+    void *thread_errors[TESTS * THREADS];
     OSSL_PROVIDER *prov;
-    int i, rc;
+    int i, rc = 0;
 
     TEST_ENTRY(argc, argv);
 
@@ -49,35 +50,32 @@ int main(int argc, char *argv[])
         TEST_EXIT_FAIL_MSG("%s", "OSSL_PROVIDER_load returned NULL");
 
     for (i = 0; i < 1 * THREADS; i++) {
-        while((rc = pthread_create(&threads[i], NULL,
-                                   dedicated_ctx_dedicated_prov,
-                                   NULL)) == EAGAIN) {
-            if (rc != 0)
-                TEST_EXIT_FAIL_MSG("%s", "pthread_create failed");
-        }
+        while((rc |= pthread_create(&threads[i], NULL,
+                                    dedicated_ctx_dedicated_prov,
+                                    NULL)) == EAGAIN)
+            ;
     }
-
     for (i = 1 * THREADS; i < 2 * THREADS; i++) {
-        while((rc = pthread_create(&threads[i], NULL,
-                                   shared_ctx_dedicated_prov,
-                                   NULL)) == EAGAIN) {
-            if (rc != 0)
-                TEST_EXIT_FAIL_MSG("%s", "pthread_create failed");
-        }
+        while((rc |= pthread_create(&threads[i], NULL,
+                                    shared_ctx_dedicated_prov,
+                                    NULL)) == EAGAIN)
+            ;
     }
     for (i = 2 * THREADS; i < 3 * THREADS; i++) {
-        while((rc = pthread_create(&threads[i], NULL,
-                                   shared_ctx_shared_prov,
-                                   prov)) == EAGAIN) {
-            if (rc != 0)
-                TEST_EXIT_FAIL_MSG("%s", "pthread_create failed");
-        }
+        while((rc |= pthread_create(&threads[i], NULL,
+                                    shared_ctx_shared_prov,
+                                    prov)) == EAGAIN)
+            ;
     }
+    for (i = 0; i < TESTS * THREADS; i++)
+        rc |= pthread_join(threads[i], &thread_errors[i]);
+
+    if (rc != 0)
+        TEST_EXIT_FAIL_MSG("%s", "pthread_create or pthread_join failed");
 
     for (i = 0; i < TESTS * THREADS; i++) {
-        rc = pthread_join(threads[i], NULL);
-        if (rc != 0)
-            TEST_EXIT_FAIL_MSG("%s", "pthread_join failed.");
+        if (thread_errors[i] != NULL)
+            TEST_EXIT_FAIL_MSG("thread %d: %s", i, (char *)thread_errors[i]);
     }
 
     rc = OSSL_PROVIDER_unload(prov);
@@ -93,28 +91,37 @@ int main(int argc, char *argv[])
  */
 static void *dedicated_ctx_dedicated_prov(void *arg)
 {
-    OSSL_PROVIDER *prov;
-    OPENSSL_CTX *ctx;
+    OSSL_PROVIDER *prov = NULL;
+    OPENSSL_CTX *ctx = NULL;
+    char *str = NULL;
     int rc;
 
     UNUSED(arg);
 
     ctx = OPENSSL_CTX_new();
-    if (ctx == NULL)
-        TEST_EXIT_FAIL_MSG("%s", "OPENSSL_CTX_new returned NULL");
+    if (ctx == NULL) {
+        str = "OPENSSL_CTX_new returned NULL";
+        goto ret;
+    }
 
     prov = OSSL_PROVIDER_load(ctx, "pkcs11");
-    if (prov == NULL)
-        TEST_EXIT_FAIL_MSG("%s", "OSSL_PROVIDER_load returned NULL");
+    if (prov == NULL) {
+        str = "OSSL_PROVIDER_load returned NULL";
+        goto ret;
+    }
 
-    use_provider(ctx, prov);
+    str = use_provider(ctx, prov);
 
-    rc = OSSL_PROVIDER_unload(prov);
-    if (rc != 1)
-        TEST_EXIT_FAIL_MSG("OSSL_PROVIDER_unload returned %d", rc);
+ret:
+    if (prov != NULL) {
+        rc = OSSL_PROVIDER_unload(prov);
+        if (rc != 1)
+            str = "OSSL_PROVIDER_unload failed";
+    }
 
+    OPENSSL_thread_stop_ex(ctx);
     OPENSSL_CTX_free(ctx);
-    return NULL;
+    return str;
 }
 
 /*
@@ -123,22 +130,29 @@ static void *dedicated_ctx_dedicated_prov(void *arg)
  */
 static void *shared_ctx_dedicated_prov(void *arg)
 {
-    OSSL_PROVIDER *prov;
+    OSSL_PROVIDER *prov = NULL;
+    char *str = NULL;
     int rc;
 
     UNUSED(arg);
 
     prov = OSSL_PROVIDER_load(NULL, "pkcs11");
-    if (prov == NULL)
-        TEST_EXIT_FAIL_MSG("%s", "OSSL_PROVIDER_load returned NULL");
+    if (prov == NULL) {
+        str = "OSSL_PROVIDER_load returned NULL";
+        goto ret;
+    }
 
-    use_provider(NULL, prov);
+    str = use_provider(NULL, prov);
 
-    rc = OSSL_PROVIDER_unload(prov);
-    if (rc != 1)
-        TEST_EXIT_FAIL_MSG("OSSL_PROVIDER_unload returned %d", rc);
+ret:
+    if (prov != NULL) {
+        rc = OSSL_PROVIDER_unload(prov);
+        if (rc != 1)
+            str = "OSSL_PROVIDER_unload failed";
+    }
 
-    return NULL;
+    OPENSSL_thread_stop_ex(NULL);
+    return str;
 }
 
 /*
@@ -147,38 +161,48 @@ static void *shared_ctx_dedicated_prov(void *arg)
  */
 static void *shared_ctx_shared_prov(void *arg)
 {
-    use_provider(NULL, arg);
-    return NULL;
+    char *str;
+
+    str = use_provider(NULL, arg);
+    OPENSSL_thread_stop_ex(NULL);
+    return str;
 }
 
-static void use_provider(OPENSSL_CTX *ctx, OSSL_PROVIDER *prov)
+static char *use_provider(OPENSSL_CTX *ctx, OSSL_PROVIDER *prov)
 {
-    const OSSL_PARAM *gettable_params;
-    OSSL_PARAM get_param[3];
-    const char *str;
+    const OSSL_PARAM *gettable_params = NULL;
+    OSSL_PARAM get_param[3] = {0};
+    const char *name = NULL;
+    char *str = NULL;
     int rc;
 
     /* available */
 
     rc = OSSL_PROVIDER_available(ctx, "pkcs11");
-    if (rc != 1)
-        TEST_EXIT_FAIL_MSG("OSSL_PROVIDER_available returned %d", rc);
+    if (rc != 1) {
+        str = "OSSL_PROVIDER_available failed";
+        goto ret;
+    }
 
     /* name */
 
-    str = OSSL_PROVIDER_name(prov);
-    if (str == NULL)
-        TEST_EXIT_FAIL_MSG("%s", "OSSL_PROVIDER_name returned NULL");
+    name = OSSL_PROVIDER_name(prov);
+    if (name == NULL) {
+        str = "OSSL_PROVIDER_name returned NULL";
+        goto ret;
+    }
 
-    if (strcmp(str, "pkcs11") != 0)
-        TEST_EXIT_FAIL_MSG("OSSL_PROVIDER_name returned \"%s\"", str);
+    if (strcmp(name, "pkcs11") != 0) {
+        str = "OSSL_PROVIDER_name returned incorrect name";
+        goto ret;
+    }
 
     /* gettable params */
 
     gettable_params = OSSL_PROVIDER_gettable_params(prov);
     if (gettable_params == NULL) {
-        TEST_EXIT_FAIL_MSG("%s",
-			   "OSSL_PROVIDER_gettable_params returned NULL");
+        str = "OSSL_PROVIDER_gettable_params returned NULL";
+        goto ret;
     }
 
     /* get params */
@@ -198,6 +222,10 @@ static void use_provider(OPENSSL_CTX *ctx, OSSL_PROVIDER *prov)
     get_param[2].key = NULL; /* last array element */
 
     rc = OSSL_PROVIDER_get_params(prov, get_param);
-    if (rc != 1)
-        TEST_EXIT_FAIL_MSG("OSSL_PROVIDER_get_params returned %d", rc);
+    if (rc != 1) {
+        str = "OSSL_PROVIDER_get_params failed";
+        goto ret;
+    }
+ret:
+    return str;
 }
