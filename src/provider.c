@@ -266,15 +266,15 @@ static void provider_teardown(void *provctx)
 
     assert(provctx != NULL);
 
-    ctx->fn->C_Logout(ctx->session);
-    ctx->fn->C_CloseSession(ctx->session);
+    if (ctx->fn != NULL) {
+        ctx->fn->C_Logout(ctx->session);
+        ctx->fn->C_CloseSession(ctx->session);
+    }
 
     tables_destroy(ctx);
 
-    if (ctx->mechlist != NULL) {
-        free(ctx->mechlist);
-        ctx->mechlist = NULL;
-    }
+    free(ctx->mechlist);
+    ctx->mechlist = NULL;
 
     /*
      * Decrement global pkcs11 module's reference count
@@ -284,8 +284,10 @@ static void provider_teardown(void *provctx)
     if (provider_init.refcount > 0) {
         provider_init.refcount--;
 
-        if (provider_init.refcount == 0)
+        if (provider_init.refcount == 0 && ctx->fn != NULL) {
             ctx->fn->C_Finalize(NULL);
+            ctx->fn = NULL;
+        }
     }
     pthread_mutex_unlock(&provider_init.mutex);
 
