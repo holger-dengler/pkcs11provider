@@ -54,6 +54,7 @@
 # include <openssl/core_numbers.h>
 
 # define UNUSED(var) (void)(var)
+# define NMEMB(array) (sizeof(array) / sizeof(array[0]))
 
 struct provctx {
     const OSSL_PROVIDER *provider;
@@ -68,6 +69,8 @@ struct provctx {
     char *pkcs11module;
     char *pkcs11slotid;
     char *pkcs11userpin;
+    char *pkcs11objects;
+    char *pkcs11rsakeygen;
 
     /* pkcs11 module data */
     void *so_handle;
@@ -77,6 +80,9 @@ struct provctx {
     CK_MECHANISM_INFO *mechinfo;
     CK_ULONG mechcount;
     CK_SESSION_HANDLE session;
+    CK_BBOOL tokobjs;
+    CK_MECHANISM_TYPE *rsakeygen;
+    CK_MECHANISM_TYPE rsakeygenbuf;
 
     /* operation dispatch tables */
     OSSL_ALGORITHM *digest;

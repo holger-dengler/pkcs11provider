@@ -139,6 +139,9 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
             {"pkcs11module", OSSL_PARAM_UTF8_PTR, &ctx->pkcs11module, 0, 0},
             {"pkcs11slotid", OSSL_PARAM_UTF8_PTR, &ctx->pkcs11slotid, 0, 0},
             {"pkcs11userpin", OSSL_PARAM_UTF8_PTR, &ctx->pkcs11userpin, 0, 0},
+            {"pkcs11objects", OSSL_PARAM_UTF8_PTR, &ctx->pkcs11objects, 0, 0},
+            {"pkcs11rsakeygen",
+             OSSL_PARAM_UTF8_PTR, &ctx->pkcs11rsakeygen, 0, 0},
             {NULL, 0, NULL, 0, 0}
         };
 
@@ -160,10 +163,17 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     str = getenv("PKCS11USERPIN");
     if (str != NULL && str[0] != '\0')
         ctx->pkcs11userpin = str;
+    str = getenv("PKCS11OBJECTS");
+    if (str != NULL && str[0] != '\0')
+        ctx->pkcs11objects = str;
+    str = getenv("PKCS11RSAKEYGEN");
+    if (str != NULL && str[0] != '\0')
+        ctx->pkcs11rsakeygen = str;
 
     if (ctx->pkcs11module == NULL
         || ctx->pkcs11slotid == NULL
-        || ctx->pkcs11userpin == NULL)
+        || ctx->pkcs11userpin == NULL
+        || ctx->pkcs11objects == NULL)
         goto err;
 
     ctx->so_handle = dlopen(ctx->pkcs11module, RTLD_NOW);
@@ -171,6 +181,12 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
         goto err;
     ctx->slotid = strtoul(ctx->pkcs11slotid, &str, 0);
     if (str[0] != '\0')
+        goto err;
+    if (strcmp(ctx->pkcs11objects, "session") == 0)
+        ctx->tokobjs = CK_FALSE;
+    else if (strcmp(ctx->pkcs11objects, "token") == 0)
+        ctx->tokobjs = CK_TRUE;
+    else
         goto err;
 
     /* Get pkcs11 module entry point. */
@@ -225,13 +241,41 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
             goto err;
     }
 
+    /*
+     * rsakeygen is NULL if the token does not support the chosen mechanism
+     * type for RSA keygeneration (X9.31 of PKCS #1). Otherwise it points to
+     * the chosen mechanism type. In case no mechanism type was chose, but the
+     * token supports both, X9.31 takes precedence.
+     */
+    ctx->rsakeygen = NULL;
+    if (ctx->pkcs11rsakeygen == NULL
+        || strcmp(ctx->pkcs11rsakeygen, "PKCS#1") == 0) {
+        for (i = 0; i < ctx->mechcount; i++) {
+            if (ctx->mechlist[i] == CKM_RSA_PKCS_KEY_PAIR_GEN) {
+                ctx->rsakeygenbuf = CKM_RSA_PKCS_KEY_PAIR_GEN;
+                ctx->rsakeygen = &ctx->rsakeygenbuf;
+                break;
+            }
+        }
+    }
+    if (ctx->pkcs11rsakeygen == NULL
+        || strcmp(ctx->pkcs11rsakeygen, "X9.31") == 0) {
+        for (i = 0; i < ctx->mechcount; i++) {
+            if (ctx->mechlist[i] == CKM_RSA_X9_31_KEY_PAIR_GEN) {
+                ctx->rsakeygenbuf = CKM_RSA_X9_31_KEY_PAIR_GEN;
+                ctx->rsakeygen = &ctx->rsakeygenbuf;
+                break;
+            }
+        }
+    }
+
     /* Create operation dispatch tables. */
     rc = tables_create(ctx);
     if (rc != 1)
         goto err;
 
-    /* Open a user R/O session: all future sessions will be user sessions. */
-    flags = CKF_SERIAL_SESSION;
+    /* Open a user R/W session: all future sessions will be user sessions. */
+    flags = CKF_SERIAL_SESSION | CKF_RW_SESSION;
     rv = ctx->fn->C_OpenSession(ctx->slotid, flags, NULL, NULL, &ctx->session);
     if (rv != CKR_OK)
         goto err;

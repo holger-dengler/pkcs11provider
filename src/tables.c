@@ -91,6 +91,7 @@ DEFINE_TBL_UNIMPLEMENTED(serializer)
 
 static int __tbl_keymgmt_create(struct provctx *ctx)
 {
+    const OSSL_DISPATCH *dispatch;
     OSSL_ALGORITHM *tbl = NULL;
     int idx = 0;
 
@@ -98,10 +99,11 @@ static int __tbl_keymgmt_create(struct provctx *ctx)
     if (tbl == NULL)
         return 0;
 
-    if (rsa_available(ctx) == 1) {
+    dispatch = rsa_keymgmt(ctx);
+    if (dispatch != NULL) {
         tbl[idx].algorithm_names = "RSA:rsaEncryption";
         tbl[idx].property_definition = "provider=pkcs11";
-        tbl[idx].implementation = rsa_keymgmt();
+        tbl[idx].implementation = dispatch;
 	idx++;
     }
 

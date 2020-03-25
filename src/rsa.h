@@ -19,7 +19,6 @@
 
 # include "provctx.h"
 
-int rsa_available(const struct provctx *);
-const OSSL_DISPATCH *rsa_keymgmt(void);
+const OSSL_DISPATCH *rsa_keymgmt(const struct provctx *);
 
 #endif
