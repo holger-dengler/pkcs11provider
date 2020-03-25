@@ -155,10 +155,8 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
                 (void (*)(void))provider_get_params},
             {OSSL_FUNC_PROVIDER_QUERY_OPERATION,
                 (void (*)(void))provider_query_operation},
-            /* XXX
             {OSSL_FUNC_PROVIDER_GET_REASON_STRINGS,
                 (void (*)(void))provider_get_reason_strings},
-            */
             {0, NULL}
         };
         *out = provider_functions;
@@ -284,6 +282,47 @@ static const OSSL_ALGORITHM *provider_query_operation(void *provctx,
 static const OSSL_ITEM *provider_get_reason_strings(void *provctx)
 {
     static const OSSL_ITEM reason_strings[] = {
+#define REASON(X) {X, #X}
+        REASON(1),
+        REASON(2),
+        REASON(3),
+        REASON(4),
+        REASON(5),
+        REASON(6),
+        REASON(7),
+        REASON(8),
+        REASON(9),
+        REASON(10),
+        REASON(11),
+        REASON(12),
+        REASON(13),
+        REASON(14),
+        REASON(15),
+        REASON(16),
+        REASON(17),
+        REASON(18),
+        REASON(19),
+        REASON(20),
+        REASON(21),
+        REASON(22),
+        REASON(23),
+        REASON(24),
+        REASON(25),
+        REASON(26),
+        REASON(27),
+        REASON(28),
+        REASON(29),
+        REASON(30),
+        REASON(31),
+        REASON(32),
+        REASON(33),
+        REASON(34),
+        REASON(35),
+        REASON(36),
+        REASON(37),
+        REASON(38),
+        REASON(39),
+#undef REASON
         {0, NULL}
     };
 
