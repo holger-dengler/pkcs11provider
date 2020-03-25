@@ -23,15 +23,15 @@
 #define DECLARE_TBL(name)                             \
 static int __tbl_##name##_create(struct provctx *);   \
 static void __tbl_##name##_destroy(struct provctx *);
-DECLARE_TBL(digest);
-DECLARE_TBL(cipher);
-DECLARE_TBL(mac);
-DECLARE_TBL(kdf);
-DECLARE_TBL(keymgmt);
-DECLARE_TBL(keyexch);
-DECLARE_TBL(signature);
-DECLARE_TBL(asym_cipher);
-DECLARE_TBL(serializer);
+DECLARE_TBL(digest)
+DECLARE_TBL(cipher)
+DECLARE_TBL(mac)
+DECLARE_TBL(kdf)
+DECLARE_TBL(keymgmt)
+DECLARE_TBL(keyexch)
+DECLARE_TBL(signature)
+DECLARE_TBL(asym_cipher)
+DECLARE_TBL(serializer)
 #undef DECLARE_TBL
 
 int tables_create(struct provctx *ctx)
@@ -78,14 +78,14 @@ static void __tbl_##name##_destroy(struct provctx *ctx) \
 {                                                       \
     assert(ctx != NULL);                                \
 }
-DEFINE_TBL_UNIMPLEMENTED(digest);
-DEFINE_TBL_UNIMPLEMENTED(cipher);
-DEFINE_TBL_UNIMPLEMENTED(mac);
-DEFINE_TBL_UNIMPLEMENTED(kdf);
-DEFINE_TBL_UNIMPLEMENTED(keyexch);
-DEFINE_TBL_UNIMPLEMENTED(signature);
-DEFINE_TBL_UNIMPLEMENTED(asym_cipher);
-DEFINE_TBL_UNIMPLEMENTED(serializer);
+DEFINE_TBL_UNIMPLEMENTED(digest)
+DEFINE_TBL_UNIMPLEMENTED(cipher)
+DEFINE_TBL_UNIMPLEMENTED(mac)
+DEFINE_TBL_UNIMPLEMENTED(kdf)
+DEFINE_TBL_UNIMPLEMENTED(keyexch)
+DEFINE_TBL_UNIMPLEMENTED(signature)
+DEFINE_TBL_UNIMPLEMENTED(asym_cipher)
+DEFINE_TBL_UNIMPLEMENTED(serializer)
 #undef DEFINE_TBL_UNIMPLEMENTED
 
 
