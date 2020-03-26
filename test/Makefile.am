@@ -11,11 +11,14 @@ AM_CFLAGS = -pthread
 
 TESTS = \
     provider_api \
-    thread_multi
+    thread_multi \
+    rsa_signatures
 
 noinst_PROGRAMS = \
     provider_api \
-    thread_multi
+    thread_multi \
+    rsa_signatures
 
 provider_api_SOURCES = test.h test.c provider_api.c
 thread_multi_SOURCES = test.h test.c thread_multi.c
+rsa_signatures_SOURCES = test.h test.c rsa_signatures.c
