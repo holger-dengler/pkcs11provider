@@ -7,6 +7,7 @@ AM_TESTS_ENVIRONMENT = . ${top_srcdir}/test/testenv.sh; \
 
 LDADD = @OPENSSL_LIBS@
 AM_LDFLAGS = @OPENSSL_LDFLAGS@
+AM_CPPFLAGS = @OPENSSL_INCLUDES@
 AM_CFLAGS = -pthread
 
 TESTS = \
