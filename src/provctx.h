@@ -74,6 +74,7 @@ struct provctx {
     CK_FUNCTION_LIST *fn;
     CK_SLOT_ID slotid;
     CK_MECHANISM_TYPE *mechlist;
+    CK_MECHANISM_INFO *mechinfo;
     CK_ULONG mechcount;
     CK_SESSION_HANDLE session;
 

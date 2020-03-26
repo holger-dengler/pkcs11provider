@@ -59,6 +59,7 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     CK_C_GetFunctionList get_functionlist;
     struct provctx *ctx = NULL;
     CK_FLAGS flags;
+    CK_ULONG i;
     char *str;
     CK_RV rv;
     int rc;
@@ -201,7 +202,7 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     if (rv != CKR_OK)
         goto err;
 
-    /* Get the slot's mechanism list. */
+    /* Cache the slot's mechanism list. */
     rv = ctx->fn->C_GetMechanismList(ctx->slotid, NULL, &ctx->mechcount);
     if (rv != CKR_OK)
         goto err;
@@ -212,6 +213,17 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
                                      ctx->mechlist, &ctx->mechcount);
     if (rv != CKR_OK)
         goto err;
+
+    /* Cache the slot's mechanism info structure for each mechanism. */
+    ctx->mechinfo = calloc(ctx->mechcount, sizeof(*ctx->mechinfo));
+    if (ctx->mechinfo == NULL)
+        goto err;
+    for (i = 0; i < ctx->mechcount; i++) {
+        rv = ctx->fn->C_GetMechanismInfo(ctx->slotid,
+                                         ctx->mechlist[i], &ctx->mechinfo[i]);
+        if (rv != CKR_OK)
+            goto err;
+    }
 
     /* Create operation dispatch tables. */
     rc = tables_create(ctx);
@@ -272,6 +284,9 @@ static void provider_teardown(void *provctx)
     }
 
     tables_destroy(ctx);
+
+    free(ctx->mechinfo);
+    ctx->mechinfo = NULL;
 
     free(ctx->mechlist);
     ctx->mechlist = NULL;
