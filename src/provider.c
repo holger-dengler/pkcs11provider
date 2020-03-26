@@ -391,7 +391,7 @@ static int provider_get_params(void *provctx, OSSL_PARAM params[])
             if (params->data_type != OSSL_PARAM_UTF8_PTR)
                 return 0;
 
-            params->data = ctx->provider_name;
+            *((char **)params->data) = ctx->provider_name;
             params->return_size = strlen(ctx->provider_name) + 1;
             continue;
         }
@@ -399,7 +399,7 @@ static int provider_get_params(void *provctx, OSSL_PARAM params[])
             if (params->data_type != OSSL_PARAM_UTF8_PTR)
                 return 0;
 
-            params->data = VERSION;
+            *((char **)params->data) = VERSION;
             params->return_size = strlen(VERSION) + 1;
             continue;
         }

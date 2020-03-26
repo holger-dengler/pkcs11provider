@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     const OSSL_PARAM *gettable_params;
     OSSL_PARAM get_param[3];
     OSSL_PROVIDER *prov;
-    const char *str;
+    const char *str, *data[2] = {NULL, NULL};
     int rc, i;
 
     TEST_ENTRY(argc, argv);
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
     gettable_params = OSSL_PROVIDER_gettable_params(prov);
     if (gettable_params == NULL) {
         TEST_EXIT_FAIL_MSG("%s",
-			   "OSSL_PROVIDER_gettable_params returned NULL");
+                           "OSSL_PROVIDER_gettable_params returned NULL");
     }
     fprintf(TEST_STREAM, "parameters :");
     for (i = 0; gettable_params[i].key != NULL; i++)
@@ -73,13 +73,13 @@ int main(int argc, char *argv[])
 
     get_param[0].key = OSSL_PROV_PARAM_NAME;
     get_param[0].data_type = OSSL_PARAM_UTF8_PTR;
-    get_param[0].data = NULL;
+    get_param[0].data = &data[0];
     get_param[0].data_size = 0;
     get_param[0].return_size = 0;
 
     get_param[1].key = OSSL_PROV_PARAM_VERSION;
     get_param[1].data_type = OSSL_PARAM_UTF8_PTR;
-    get_param[1].data = NULL;
+    get_param[1].data = &data[1];
     get_param[1].data_size = 0;
     get_param[1].return_size = 0;
 
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     fprintf(TEST_STREAM, "%s : %s\n",
             OSSL_PROV_PARAM_VERSION, (char *)get_param[1].data);
 
-    if (strcmp(get_param[0].data, "pkcs11") != 0)
+    if (strcmp(data[0], "pkcs11") != 0)
         TEST_EXIT_FAIL();
     
     /* unload */
