@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <openssl/params.h> /*XXX will eventually be provided by the core*/
+
 #include "config.h"
 #include "provctx.h"
 #include "tables.h"
@@ -365,9 +367,9 @@ static void provider_teardown(void *provctx)
 static const OSSL_PARAM *provider_gettable_params(void *provctx)
 {
     static const OSSL_PARAM gettable_params[] = {
-        {OSSL_PROV_PARAM_NAME, OSSL_PARAM_UTF8_PTR, NULL, 0, 0},
-        {OSSL_PROV_PARAM_VERSION, OSSL_PARAM_UTF8_PTR, NULL, 0, 0},
-        {NULL, 0, NULL, 0, 0}
+        OSSL_PARAM_DEFN(OSSL_PROV_PARAM_NAME, OSSL_PARAM_UTF8_PTR, NULL, 0),
+        OSSL_PARAM_DEFN(OSSL_PROV_PARAM_VERSION, OSSL_PARAM_UTF8_PTR, NULL, 0),
+        OSSL_PARAM_END
     };
 
     assert(provctx != NULL);
@@ -382,28 +384,17 @@ static const OSSL_PARAM *provider_gettable_params(void *provctx)
 static int provider_get_params(void *provctx, OSSL_PARAM params[])
 {
     struct provctx *ctx = provctx;
+    OSSL_PARAM *p;
 
     assert(provctx != NULL);
     assert(params != NULL);
 
-    for (; params->key != NULL; params++) {
-        if (strcmp(params->key, OSSL_PROV_PARAM_NAME) == 0) {
-            if (params->data_type != OSSL_PARAM_UTF8_PTR)
-                return 0;
-
-            *((char **)params->data) = ctx->provider_name;
-            params->return_size = strlen(ctx->provider_name) + 1;
-            continue;
-        }
-        if (strcmp(params->key, OSSL_PROV_PARAM_VERSION) == 0) {
-            if (params->data_type != OSSL_PARAM_UTF8_PTR)
-                return 0;
-
-            *((char **)params->data) = VERSION;
-            params->return_size = strlen(VERSION) + 1;
-            continue;
-        }
-    }
+    p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_NAME);
+        if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, ctx->provider_name))
+            return 0;
+    p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_VERSION);
+        if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, VERSION))
+            return 0;
 
     return 1;
 }
