@@ -212,7 +212,17 @@ static void rsa_keymgmt_gen_cleanup(void *genctx)
 
 static void rsa_keymgmt_free(void *keydata)
 {
-    free(keydata);
+    struct rsa_keydata *key = keydata;
+    struct provctx *ctx;
+
+    if (key == NULL)
+        return;
+
+    ctx = key->genctx.provctx;
+
+    (void)ctx->fn->C_DestroyObject(ctx->session, key->priv);
+    (void)ctx->fn->C_DestroyObject(ctx->session, key->pub);
+    free(key);
 }
 
 static int rsa_keymgmt_has(void *keydata, int selection)
