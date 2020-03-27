@@ -20,6 +20,7 @@
 
 #include "rsa.h"
 
+/* required functions */
 static OSSL_OP_keymgmt_gen_init_fn rsa_keymgmt_gen_init;
 static OSSL_OP_keymgmt_gen_fn rsa_keymgmt_gen;
 static OSSL_OP_keymgmt_gen_cleanup_fn rsa_keymgmt_gen_cleanup;
@@ -81,7 +82,7 @@ const OSSL_DISPATCH *rsa_keymgmt(const struct provctx *ctx)
         {OSSL_FUNC_KEYMGMT_EXPORT_TYPES,
             (void (*)(void))rsa_keymgmt_export_types},
         {OSSL_FUNC_KEYMGMT_COPY, (void (*)(void))rsa_keymgmt_copy},
-	*/
+        */
         {0, NULL}
     };
 
@@ -165,7 +166,7 @@ static void *rsa_keymgmt_gen(void *genctx, OSSL_CALLBACK *cb, void *cbarg)
 
     rv = ctx->provctx->fn->C_GenerateKeyPair(ctx->provctx->session, &mech,
                                              pub_templ, NMEMB(pub_templ),
-					     priv_templ, NMEMB(priv_templ),
+                                             priv_templ, NMEMB(priv_templ),
                                              &key->pub, &key->priv);
     if (rv != CKR_OK)
         goto err;

@@ -104,7 +104,7 @@ static int __tbl_keymgmt_create(struct provctx *ctx)
         tbl[idx].algorithm_names = "RSA:rsaEncryption";
         tbl[idx].property_definition = "provider=pkcs11";
         tbl[idx].implementation = dispatch;
-	idx++;
+        idx++;
     }
 
     tbl[idx].algorithm_names = NULL; /* last list element */
