@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <openssl/params.h> /*XXX will eventually be provided by the core*/
+
 #include "rsa.h"
 
 /* required functions */
@@ -203,6 +205,11 @@ static int rsa_keymgmt_has(void *keydata, int selection)
                       | OSSL_KEYMGMT_SELECT_OTHER_PARAMETERS)) != 0)
         ok = 1;
 
+    if ((selection & OSSL_KEYMGMT_SELECT_OTHER_PARAMETERS) != 0)
+        ok = ok && 0;     /* This will change with PSS and OAEP */
+    if ((selection & OSSL_KEYMGMT_SELECT_KEYPAIR) != 0)
+        ok = ok && (key->pub != CK_INVALID_HANDLE)
+                && (key->priv != CK_INVALID_HANDLE);
     if ((selection & OSSL_KEYMGMT_SELECT_PUBLIC_KEY) != 0)
         ok = ok && (key->pub != CK_INVALID_HANDLE);
     if ((selection & OSSL_KEYMGMT_SELECT_PRIVATE_KEY) != 0)
