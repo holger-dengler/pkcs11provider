@@ -61,7 +61,7 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     CK_C_GetFunctionList get_functionlist;
     struct provctx *ctx = NULL;
     CK_FLAGS flags;
-    CK_ULONG i;
+    CK_ULONG i, idx1, idx2;
     char *str;
     CK_RV rv;
     int rc;
@@ -243,32 +243,38 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
             goto err;
     }
 
-    /*
-     * rsakeygen is NULL if the token does not support the chosen mechanism
-     * type for RSA keygeneration (X9.31 of PKCS #1). Otherwise it points to
-     * the chosen mechanism type. In case no mechanism type was chose, but the
-     * token supports both, X9.31 takes precedence.
-     */
-    ctx->rsakeygen = NULL;
-    if (ctx->pkcs11rsakeygen == NULL
-        || strcmp(ctx->pkcs11rsakeygen, "PKCS#1") == 0) {
-        for (i = 0; i < ctx->mechcount; i++) {
-            if (ctx->mechlist[i] == CKM_RSA_PKCS_KEY_PAIR_GEN) {
-                ctx->rsakeygenbuf = CKM_RSA_PKCS_KEY_PAIR_GEN;
-                ctx->rsakeygen = &ctx->rsakeygenbuf;
-                break;
+    /* Parse RSA keygeneration mechanism precedence. */
+    if (ctx->pkcs11rsakeygen == NULL)
+        ctx->pkcs11rsakeygen = "X9.31:PKCS#1"; /* default */
+
+    idx1 = 0;
+    GETKEY(&idx1, CKM_RSA_X9_31_KEY_PAIR_GEN, ctx->mechlist, ctx->mechcount);
+    idx2 = 0;
+    GETKEY(&idx2, CKM_RSA_PKCS_KEY_PAIR_GEN, ctx->mechlist, ctx->mechcount);
+    i = 0;
+    ctx->rsakeygen[0].avail = 0;
+    ctx->rsakeygen[1].avail = 0;
+    str = strtok(ctx->pkcs11rsakeygen, ":");
+    while (str != NULL) {
+        if (i >= NMEMB(ctx->rsakeygen))
+            goto err;
+
+        if (strcmp(str, "X9.31") == 0) {
+            if (idx1 < ctx->mechcount) {
+                ctx->rsakeygen[i].avail = 1;
+                ctx->rsakeygen[i].idx = idx1;
+                i++;
             }
-        }
-    }
-    if (ctx->pkcs11rsakeygen == NULL
-        || strcmp(ctx->pkcs11rsakeygen, "X9.31") == 0) {
-        for (i = 0; i < ctx->mechcount; i++) {
-            if (ctx->mechlist[i] == CKM_RSA_X9_31_KEY_PAIR_GEN) {
-                ctx->rsakeygenbuf = CKM_RSA_X9_31_KEY_PAIR_GEN;
-                ctx->rsakeygen = &ctx->rsakeygenbuf;
-                break;
+        } else if (strcmp(str, "PKCS#1") == 0) {
+            if (idx2 < ctx->mechcount) {
+                ctx->rsakeygen[i].avail = 1;
+                ctx->rsakeygen[i].idx = idx2;
+                i++;
             }
+        } else {
+            goto err; /* parse error */
         }
+        str = strtok(NULL, ":");
     }
 
     /* Create operation dispatch tables. */

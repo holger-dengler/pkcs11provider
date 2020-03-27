@@ -55,6 +55,13 @@
 
 # define UNUSED(var) (void)(var)
 # define NMEMB(array) (sizeof(array) / sizeof(array[0]))
+# define GETKEY(key,value,pairs,count)               \
+do {                                                 \
+    for (*(key) = 0; *(key) < (count); (*(key))++) { \
+        if ((pairs)[*(key)] == (value))              \
+            break;                                   \
+    }                                                \
+} while (0)
 
 struct provctx {
     const OSSL_PROVIDER *provider;
@@ -81,8 +88,11 @@ struct provctx {
     CK_ULONG mechcount;
     CK_SESSION_HANDLE session;
     CK_BBOOL tokobjs;
-    CK_MECHANISM_TYPE *rsakeygen;
-    CK_MECHANISM_TYPE rsakeygenbuf;
+    struct {
+      /* X9.31 and PKCS#1 */
+      int avail;
+      CK_ULONG idx;
+    } rsakeygen[2];
 
     /* operation dispatch tables */
     OSSL_ALGORITHM *digest;
