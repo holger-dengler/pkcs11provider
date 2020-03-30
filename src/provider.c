@@ -304,10 +304,8 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
                 (void (*)(void))provider_get_params},
             {OSSL_FUNC_PROVIDER_QUERY_OPERATION,
                 (void (*)(void))provider_query_operation},
-            /* XXX
             {OSSL_FUNC_PROVIDER_GET_REASON_STRINGS,
                 (void (*)(void))provider_get_reason_strings},
-            */
             {0, NULL}
         };
         *out = provider_functions;
