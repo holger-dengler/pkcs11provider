@@ -90,9 +90,9 @@ int main(int argc, char *argv[])
         TEST_EXIT_FAIL_MSG("OSSL_PROVIDER_get_params returned %d", rc);
 
     fprintf(TEST_STREAM, "%s : %s\n",
-            OSSL_PROV_PARAM_NAME, (char *)get_param[0].data);
+            OSSL_PROV_PARAM_NAME, (char *)data[0]);
     fprintf(TEST_STREAM, "%s : %s\n",
-            OSSL_PROV_PARAM_VERSION, (char *)get_param[1].data);
+            OSSL_PROV_PARAM_VERSION, (char *)data[1]);
 
     if (strcmp(data[0], "pkcs11") != 0)
         TEST_EXIT_FAIL();
