@@ -53,7 +53,7 @@ struct {
     0
 };
 
-int OSSL_provider_init(const OSSL_PROVIDER *provider,
+int OSSL_provider_init(const OSSL_CORE_HANDLE *handle,
                        const OSSL_DISPATCH *in,
                        const OSSL_DISPATCH **out,
                        void **provctx)
@@ -66,7 +66,7 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     CK_RV rv;
     int rc;
 
-    assert(provider != NULL);
+    assert(handle != NULL);
     assert(in != NULL);
     assert(out != NULL);
     assert(provctx != NULL);
@@ -75,8 +75,8 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
     if (ctx == NULL)
         goto err;
 
-    /* Save provider handle. */
-    ctx->provider = provider;
+    /* Save core handle. */
+    ctx->handle = handle;
 
     /* Get all core functions. */
     for (; in->function_id != 0; in++) {
@@ -124,8 +124,8 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
         || ctx->core_get_library_context == NULL)
         goto err;
 
-    /* Save libctx handle. */
-    ctx->libctx = ctx->core_get_library_context(provider);
+    /* Save corectx. */
+    ctx->corectx = ctx->core_get_library_context(handle);
 
     /* Get all core parameters. */
     {
@@ -147,7 +147,7 @@ int OSSL_provider_init(const OSSL_PROVIDER *provider,
             {NULL, 0, NULL, 0, 0}
         };
 
-        rc = ctx->core_get_params(provider, core_params);
+        rc = ctx->core_get_params(handle, core_params);
         if (rc != 1)
             goto err;
     }
@@ -411,7 +411,7 @@ static int provider_get_params(void *provctx, OSSL_PARAM params[])
  */
 static const OSSL_ALGORITHM *provider_query_operation(void *provctx,
                                                       int operation_id,
-                                                      const int *no_store)
+                                                      int *no_store)
 {
     struct provctx *ctx = provctx;
 

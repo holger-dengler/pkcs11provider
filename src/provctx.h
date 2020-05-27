@@ -64,8 +64,8 @@ do {                                                 \
 } while (0)
 
 struct provctx {
-    const OSSL_PROVIDER *provider;
-    OPENSSL_CTX *libctx;
+    const OSSL_CORE_HANDLE *handle;
+    OPENSSL_CORE_CTX *corectx;
 
     /* default core params */
     char *openssl_version;
